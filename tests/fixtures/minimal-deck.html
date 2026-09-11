@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Minimal Deck</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        background: #111827;
+        font-family: Arial, sans-serif;
+      }
+
+      #stage {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 960px;
+        height: 540px;
+        overflow: hidden;
+        transform-origin: top left;
+        background: #ffffff;
+      }
+
+      .slide {
+        position: absolute;
+        inset: 0;
+        display: none;
+        overflow: hidden;
+        padding: 64px 72px;
+        background: #f8fafc;
+      }
+
+      .slide.active {
+        display: block;
+      }
+
+      .slide.entered .animate-in {
+        animation: enter 300ms ease-out both;
+      }
+
+      h1 {
+        position: absolute;
+        top: 76px;
+        left: 88px;
+        width: 520px;
+        margin: 0;
+        color: #172033;
+        font-size: 54px;
+        line-height: 1.1;
+      }
+
+      .subtitle {
+        position: absolute;
+        top: 168px;
+        left: 92px;
+        width: 430px;
+        margin: 0;
+        color: #475569;
+        font-size: 24px;
+      }
+
+      .accent {
+        position: absolute;
+        top: 274px;
+        left: 92px;
+        width: 260px;
+        height: 112px;
+        border-radius: 8px;
+        background: #0f766e;
+      }
+
+      .second-title {
+        position: absolute;
+        top: 52px;
+        left: 70px;
+        width: 620px;
+        margin: 0;
+        color: #172033;
+        font-size: 44px;
+      }
+
+      .steps {
+        position: absolute;
+        top: 148px;
+        left: 70px;
+        display: grid;
+        gap: 18px;
+        width: 340px;
+      }
+
+      [data-step] {
+        padding: 16px 20px;
+        color: #ffffff;
+        background: #334155;
+        opacity: 0;
+        transform: translateY(10px);
+        transition: opacity 120ms linear, transform 120ms linear;
+      }
+
+      [data-step].revealed {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      #chart {
+        position: absolute;
+        top: 154px;
+        right: 72px;
+        width: 390px;
+        height: 260px;
+        border: 1px solid #94a3b8;
+        background: #ffffff;
+      }
+
+      #progress {
+        position: fixed;
+        left: 0;
+        bottom: 0;
+        z-index: 10;
+        width: 0;
+        height: 5px;
+        background: #f59e0b;
+      }
+
+      #counter {
+        position: fixed;
+        right: 16px;
+        bottom: 12px;
+        z-index: 10;
+        color: #475569;
+        font-size: 15px;
+      }
+
+      @keyframes enter {
+        from {
+          opacity: 0;
+          transform: translateY(12px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main id="stage">
+      <section class="slide" id="first-slide">
+        <h1 class="animate-in">First title</h1>
+        <p class="subtitle" id="editable-subtitle">Editable subtitle</p>
+        <div class="accent" aria-label="Accent block"></div>
+      </section>
+      <section class="slide" id="second-slide">
+        <h2 class="second-title animate-in" id="second-title">Second slide</h2>
+        <div class="steps">
+          <div data-step>First reveal</div>
+          <div data-step>Second reveal</div>
+        </div>
+        <canvas id="chart" width="390" height="260"></canvas>
+      </section>
+    </main>
+    <div id="progress"></div>
+    <div id="counter"></div>
+    <script>
+      (() => {
+        const slides = [...document.querySelectorAll(".slide")];
+        const total = slides.length;
+        let current = Math.min(
+          Math.max(Number.parseInt(location.hash.slice(1), 10) || 1, 1),
+          total,
+        ) - 1;
+
+        const steps = (index) => [
+          ...slides[index].querySelectorAll("[data-step]"),
+        ];
+
+        function broadcastState() {
+          if (window.parent === window) return;
+          window.parent.postMessage(
+            { type: "slidecast-state", cur: current + 1, total },
+            "*",
+          );
+        }
+
+        function show(index, revealAll = false) {
+          current = Math.min(Math.max(index, 0), total - 1);
+          slides.forEach((slide, slideIndex) => {
+            slide.classList.toggle("active", slideIndex === current);
+            slide.classList.remove("entered");
+          });
+          steps(current).forEach((element) => {
+            element.classList.toggle("revealed", revealAll);
+          });
+          document.querySelector("#progress").style.width =
+            `${((current + 1) / total) * 100}%`;
+          document.querySelector("#counter").textContent =
+            `${current + 1} / ${total}`;
+          history.replaceState(null, "", `#${current + 1}`);
+          void slides[current].offsetWidth;
+          slides[current].classList.add("entered");
+          broadcastState();
+        }
+
+        function next() {
+          const pending = steps(current).filter(
+            (element) => !element.classList.contains("revealed"),
+          );
+          if (pending.length > 0) {
+            pending[0].classList.add("revealed");
+            return;
+          }
+          if (current < total - 1) show(current + 1);
+        }
+
+        function previous() {
+          const shown = steps(current).filter((element) =>
+            element.classList.contains("revealed"),
+          );
+          if (shown.length > 0) {
+            shown.at(-1).classList.remove("revealed");
+            return;
+          }
+          if (current > 0) show(current - 1, true);
+        }
+
+        addEventListener("keydown", (event) => {
+          if (["ArrowRight", " ", "PageDown"].includes(event.key)) {
+            event.preventDefault();
+            next();
+          } else if (["ArrowLeft", "PageUp"].includes(event.key)) {
+            event.preventDefault();
+            previous();
+          } else if (event.key === "Home") {
+            show(0);
+          } else if (event.key === "End") {
+            show(total - 1, true);
+          }
+        });
+
+        addEventListener("click", (event) => {
+          if (!event.target.closest("a")) next();
+        });
+
+        addEventListener("hashchange", () => {
+          const slideNumber = Number.parseInt(location.hash.slice(1), 10);
+          if (
+            slideNumber >= 1 &&
+            slideNumber <= total &&
+            slideNumber - 1 !== current
+          ) {
+            show(slideNumber - 1);
+          }
+        });
+
+        addEventListener("message", (event) => {
+          if (event.data?.type !== "slidecast-nav") return;
+          if (event.data.action === "next") next();
+          if (event.data.action === "prev") previous();
+          if (event.data.action === "ping") broadcastState();
+        });
+
+        function fit() {
+          const scale = Math.min(innerWidth / 960, innerHeight / 540);
+          document.querySelector("#stage").style.transform =
+            `scale(${scale})`;
+        }
+
+        const context = document.querySelector("#chart").getContext("2d");
+        context.fillStyle = "#ecfeff";
+        context.fillRect(0, 0, 390, 260);
+        context.fillStyle = "#0f766e";
+        [72, 146, 228, 318].forEach((x, index) => {
+          context.fillRect(x, 220 - index * 42, 42, 40 + index * 42);
+        });
+        context.strokeStyle = "#f59e0b";
+        context.lineWidth = 8;
+        context.beginPath();
+        context.moveTo(28, 214);
+        context.lineTo(112, 168);
+        context.lineTo(196, 184);
+        context.lineTo(280, 96);
+        context.lineTo(360, 52);
+        context.stroke();
+
+        addEventListener("resize", fit);
+        fit();
+        show(current);
+      })();
+    </script>
+  </body>
+</html>

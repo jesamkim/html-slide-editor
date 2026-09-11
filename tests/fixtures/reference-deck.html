@@ -1,0 +1,791 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>HTML Slide Editor Reference Deck</title>
+    <style>
+      :root {
+        --ink: #172033;
+        --muted: #5f6b7a;
+        --paper: #f7f9fc;
+        --panel: #ffffff;
+        --line: #dbe2ea;
+        --teal: #0f766e;
+        --cyan: #22d3ee;
+        --orange: #f59e0b;
+        --violet: #7c3aed;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      html,
+      body {
+        width: 100%;
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        background: #111827;
+        font-family: Arial, Helvetica, sans-serif;
+      }
+
+      #stage {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 1920px;
+        height: 1080px;
+        overflow: hidden;
+        transform-origin: top left;
+        background: var(--paper);
+      }
+
+      .slide {
+        position: absolute;
+        inset: 0;
+        display: none;
+        overflow: hidden;
+        padding: 104px 120px;
+        color: var(--ink);
+        background:
+          radial-gradient(circle at 86% 18%, rgb(34 211 238 / 12%), transparent 28%),
+          linear-gradient(145deg, #ffffff 0%, #f3f7fb 100%);
+      }
+
+      .slide.active {
+        display: block;
+      }
+
+      .slide.entered .animate-in {
+        animation: enter 280ms ease-out both;
+      }
+
+      .slide--dark {
+        color: #f8fafc;
+        background:
+          radial-gradient(circle at 78% 30%, rgb(34 211 238 / 22%), transparent 26%),
+          linear-gradient(135deg, #071521, #0b2535);
+      }
+
+      .eyebrow {
+        margin: 0 0 24px;
+        color: var(--teal);
+        font-size: 24px;
+        font-weight: 700;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+      }
+
+      .slide--dark .eyebrow {
+        color: #67e8f9;
+      }
+
+      h1,
+      h2 {
+        margin: 0;
+        max-width: 1350px;
+        font-weight: 760;
+        letter-spacing: -0.035em;
+      }
+
+      h1 {
+        font-size: 108px;
+        line-height: 0.98;
+      }
+
+      h2 {
+        font-size: 74px;
+        line-height: 1.08;
+      }
+
+      .lead {
+        max-width: 1050px;
+        margin: 34px 0 0;
+        color: var(--muted);
+        font-size: 34px;
+        line-height: 1.45;
+      }
+
+      .slide--dark .lead,
+      .slide--dark .muted {
+        color: #b8c8d5;
+      }
+
+      .muted {
+        color: var(--muted);
+      }
+
+      .grid {
+        display: grid;
+        gap: 28px;
+        margin-top: 58px;
+      }
+
+      .grid--3 {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      .grid--2 {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .card {
+        min-height: 220px;
+        padding: 34px;
+        border: 1px solid var(--line);
+        border-radius: 24px;
+        background: rgb(255 255 255 / 90%);
+        box-shadow: 0 18px 45px rgb(15 23 42 / 8%);
+      }
+
+      .card strong {
+        display: block;
+        margin-bottom: 18px;
+        font-size: 30px;
+      }
+
+      .card p {
+        margin: 0;
+        color: var(--muted);
+        font-size: 25px;
+        line-height: 1.45;
+      }
+
+      .metric {
+        font-size: 78px;
+        font-weight: 800;
+        color: var(--teal);
+      }
+
+      .pill {
+        display: inline-flex;
+        align-items: center;
+        padding: 12px 20px;
+        border-radius: 999px;
+        color: #0f4c45;
+        background: #ccfbf1;
+        font-size: 22px;
+        font-weight: 700;
+      }
+
+      .flow {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 28px;
+        margin-top: 90px;
+      }
+
+      .flow-node {
+        width: 310px;
+        padding: 34px;
+        border: 2px solid #99f6e4;
+        border-radius: 24px;
+        background: #f0fdfa;
+        text-align: center;
+        font-size: 28px;
+        font-weight: 700;
+      }
+
+      .flow-arrow {
+        color: var(--teal);
+        font-size: 54px;
+      }
+
+      .steps {
+        display: grid;
+        gap: 22px;
+        max-width: 1080px;
+        margin-top: 58px;
+      }
+
+      [data-step] {
+        padding: 24px 30px;
+        border-left: 8px solid var(--cyan);
+        border-radius: 0 18px 18px 0;
+        color: #ffffff;
+        background: #26384b;
+        font-size: 29px;
+        opacity: 0;
+        transform: translateY(12px);
+        transition: opacity 160ms linear, transform 160ms linear;
+      }
+
+      [data-step].revealed {
+        opacity: 1;
+        transform: translateY(0);
+      }
+
+      .editor-layout {
+        display: grid;
+        grid-template-columns: 320px 1fr 330px;
+        gap: 26px;
+        height: 610px;
+        margin-top: 54px;
+      }
+
+      .editor-pane {
+        padding: 26px;
+        border: 1px solid var(--line);
+        border-radius: 22px;
+        background: #ffffff;
+      }
+
+      .editor-canvas {
+        display: grid;
+        place-items: center;
+        border-radius: 22px;
+        color: #e0f2fe;
+        background: #173042;
+      }
+
+      .editor-canvas p {
+        width: 70%;
+        margin: 0;
+        font-size: 34px;
+        line-height: 1.45;
+        text-align: center;
+      }
+
+      .preview-image {
+        width: 100%;
+        height: 250px;
+        margin-top: 30px;
+        border-radius: 20px;
+        object-fit: cover;
+        background: #dff7f5;
+      }
+
+      .nested-shell {
+        position: absolute;
+        top: 330px;
+        left: 250px;
+        width: 900px;
+        padding: 48px;
+        border: 3px solid #5eead4;
+        border-radius: 30px;
+        background: #ffffff;
+      }
+
+      .nested-shell p {
+        margin: 0;
+        font-size: 38px;
+        line-height: 1.4;
+      }
+
+      .proxy-layer {
+        position: absolute;
+        top: 280px;
+        right: 200px;
+        width: 420px;
+        height: 330px;
+        border: 3px dashed #7c3aed;
+        border-radius: 32px;
+        background: rgb(124 58 237 / 8%);
+      }
+
+      .proxy-layer span {
+        position: absolute;
+        right: 24px;
+        bottom: 22px;
+        color: #6d28d9;
+        font-size: 24px;
+        font-weight: 700;
+      }
+
+      .table {
+        width: 100%;
+        margin-top: 54px;
+        border-collapse: collapse;
+        overflow: hidden;
+        border-radius: 20px;
+        background: #ffffff;
+        box-shadow: 0 16px 40px rgb(15 23 42 / 8%);
+      }
+
+      .table th,
+      .table td {
+        padding: 24px 28px;
+        border-bottom: 1px solid var(--line);
+        text-align: left;
+        font-size: 25px;
+      }
+
+      .table th {
+        color: #ffffff;
+        background: #173042;
+      }
+
+      .timeline {
+        display: grid;
+        grid-template-columns: repeat(4, 1fr);
+        gap: 24px;
+        margin-top: 90px;
+      }
+
+      .timeline-item {
+        position: relative;
+        padding: 34px 28px;
+        border-top: 8px solid var(--teal);
+        background: #ffffff;
+        box-shadow: 0 14px 32px rgb(15 23 42 / 8%);
+      }
+
+      .timeline-item strong {
+        display: block;
+        margin-bottom: 14px;
+        font-size: 28px;
+      }
+
+      .footer {
+        position: absolute;
+        right: 70px;
+        bottom: 45px;
+        color: var(--muted);
+        font-size: 18px;
+      }
+
+      .slide--dark .footer {
+        color: #91a8b8;
+      }
+
+      #progress {
+        position: fixed;
+        left: 0;
+        bottom: 0;
+        z-index: 20;
+        width: 0;
+        height: 7px;
+        background: var(--cyan);
+        transition: width 180ms linear;
+      }
+
+      #counter {
+        position: fixed;
+        right: 18px;
+        bottom: 14px;
+        z-index: 20;
+        color: #64748b;
+        font-size: 16px;
+      }
+
+      @keyframes enter {
+        from {
+          opacity: 0;
+          transform: translateY(14px);
+        }
+        to {
+          opacity: 1;
+          transform: translateY(0);
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <main id="stage">
+      <section class="slide slide--dark" id="s1">
+        <p class="eyebrow">Public test fixture</p>
+        <h1 class="animate-in">HTML Slide Editor<br>Reference Deck</h1>
+        <p class="lead">A neutral, self-contained deck for browser editing and export tests.</p>
+        <div class="flow" style="justify-content:flex-start; margin-top:70px;">
+          <span class="pill">22 slides</span>
+          <span class="pill">Editable HTML</span>
+          <span class="pill">No external assets</span>
+        </div>
+        <div class="footer">Open test fixture • 1 / 22</div>
+      </section>
+
+      <section class="slide" id="s2">
+        <p class="eyebrow">Text layout</p>
+        <h2>Long-form content remains readable and editable</h2>
+        <div class="grid grid--2">
+          <div class="card">
+            <strong>Clear hierarchy</strong>
+            <p>Headings, paragraphs, lists, and labels keep predictable spacing at a fixed stage size.</p>
+          </div>
+          <div class="card">
+            <strong>Stable export</strong>
+            <p>The editor removes temporary state while preserving semantic HTML and runtime scripts.</p>
+          </div>
+          <div class="card">
+            <strong>Local-first</strong>
+            <p>Files stay in the browser and export as a separate HTML document.</p>
+          </div>
+          <div class="card">
+            <strong>Regression coverage</strong>
+            <p>This slide supplies a deterministic text-heavy visual baseline.</p>
+          </div>
+        </div>
+        <div class="footer">Reference deck • text baseline</div>
+      </section>
+
+      <section class="slide" id="s3">
+        <p class="eyebrow">Vector content</p>
+        <h2>SVG elements survive round-trip editing</h2>
+        <svg viewBox="0 0 1200 500" width="1200" height="500" style="margin-top:70px" aria-label="Editor data flow">
+          <defs>
+            <linearGradient id="flow-gradient" x1="0" x2="1">
+              <stop offset="0" stop-color="#0f766e"></stop>
+              <stop offset="1" stop-color="#22d3ee"></stop>
+            </linearGradient>
+          </defs>
+          <rect x="40" y="130" width="280" height="190" rx="28" fill="#ecfeff" stroke="#0f766e" stroke-width="5"></rect>
+          <rect x="460" y="130" width="280" height="190" rx="28" fill="#f5f3ff" stroke="#7c3aed" stroke-width="5"></rect>
+          <rect x="880" y="130" width="280" height="190" rx="28" fill="#fff7ed" stroke="#f59e0b" stroke-width="5"></rect>
+          <path d="M320 225 H460 M740 225 H880" stroke="url(#flow-gradient)" stroke-width="12" stroke-linecap="round"></path>
+          <polygon points="445,205 475,225 445,245" fill="#22d3ee"></polygon>
+          <polygon points="865,205 895,225 865,245" fill="#22d3ee"></polygon>
+          <text x="180" y="235" text-anchor="middle" font-size="36" fill="#134e4a">Import</text>
+          <text x="600" y="235" text-anchor="middle" font-size="36" fill="#5b21b6">Edit</text>
+          <text x="1020" y="235" text-anchor="middle" font-size="36" fill="#9a3412">Export</text>
+        </svg>
+        <div class="footer">Reference deck • SVG baseline</div>
+      </section>
+
+      <section class="slide" id="s4">
+        <p class="eyebrow">Object model</p>
+        <h2>Each visual block keeps one clear responsibility</h2>
+        <div class="grid grid--3">
+          <div class="card"><strong>Selection</strong><p>Find the intended DOM target.</p></div>
+          <div class="card"><strong>Transformation</strong><p>Move and resize with explicit geometry.</p></div>
+          <div class="card"><strong>History</strong><p>Record reversible commands.</p></div>
+        </div>
+        <div class="footer">Reference deck • object model</div>
+      </section>
+
+      <section class="slide" id="s5">
+        <p class="eyebrow">Deterministic state</p>
+        <h2>Simple invariants make editing predictable</h2>
+        <div class="grid grid--3">
+          <div class="card"><span class="metric">1</span><strong>Active slide</strong><p>Only one slide renders as active.</p></div>
+          <div class="card"><span class="metric">0</span><strong>Server uploads</strong><p>Documents remain local.</p></div>
+          <div class="card"><span class="metric">22</span><strong>Fixture slides</strong><p>Enough variety for regression coverage.</p></div>
+        </div>
+        <div class="footer">Reference deck • invariants</div>
+      </section>
+
+      <section class="slide slide--dark" id="personas">
+        <p class="eyebrow">Progressive reveal</p>
+        <h2>Different editing roles appear one step at a time</h2>
+        <div class="steps">
+          <div data-step>Author: changes content and visual hierarchy</div>
+          <div data-step>Reviewer: checks layout, accessibility, and export</div>
+          <div data-step>Presenter: opens the standalone HTML deck</div>
+        </div>
+        <div class="footer">Reference deck • reveal sequence</div>
+      </section>
+
+      <section class="slide" id="s6">
+        <p class="eyebrow">Editing loop</p>
+        <h2>A short loop keeps every change reversible</h2>
+        <div class="steps">
+          <div data-step>Select an element through the real pointer path</div>
+          <div data-step>Apply a bounded mutation</div>
+          <div data-step>Record undo and redo state</div>
+          <div data-step>Validate the exported document</div>
+        </div>
+        <div class="footer">Reference deck • editing loop</div>
+      </section>
+
+      <section class="slide" id="e2e-overview">
+        <p class="eyebrow">Editor overview</p>
+        <h2>One workspace combines navigation, canvas, and inspection</h2>
+        <div class="editor-layout">
+          <div class="editor-pane">
+            <strong style="font-size:28px">Slides</strong>
+            <img
+              class="preview-image"
+              alt="Neutral thumbnail preview"
+              src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='480' height='280'%3E%3Crect width='480' height='280' fill='%23173042'/%3E%3Crect x='42' y='44' width='280' height='28' rx='8' fill='%2322d3ee'/%3E%3Crect x='42' y='96' width='360' height='18' rx='6' fill='%23cbd5e1'/%3E%3Crect x='42' y='132' width='230' height='18' rx='6' fill='%2394a3b8'/%3E%3Ccircle cx='382' cy='202' r='48' fill='%230f766e'/%3E%3C/svg%3E"
+            >
+          </div>
+          <div class="editor-canvas">
+            <p>This paragraph can be edited directly in the canvas.</p>
+          </div>
+          <div class="editor-pane">
+            <strong style="font-size:28px">Inspector</strong>
+            <p class="muted" style="font-size:24px; line-height:1.5">Position, dimensions, typography, and arrangement controls stay next to the selected object.</p>
+          </div>
+        </div>
+        <div class="footer">Reference deck • embedded image baseline</div>
+      </section>
+
+      <section class="slide slide--dark" id="s7">
+        <p class="eyebrow">Selection protocol</p>
+        <h2>The parent and iframe exchange explicit messages</h2>
+        <div class="steps">
+          <div data-step>Iframe reports target bounds and styles</div>
+          <div data-step>Parent renders selection handles</div>
+          <div data-step>Commands return acknowledgements and checkpoints</div>
+        </div>
+        <div class="footer">Reference deck • protocol sequence</div>
+      </section>
+
+      <section class="slide" id="s8">
+        <p class="eyebrow">Nested content</p>
+        <h2>Deeply nested text remains a direct editing target</h2>
+        <div class="nested-shell">
+          <div style="padding:36px; border-radius:22px; background:#ecfeff;">
+            <p>Nested text blocks stay editable through real pointer paths.</p>
+          </div>
+        </div>
+        <div class="footer">Reference deck • nested text</div>
+      </section>
+
+      <section class="slide" id="s9">
+        <p class="eyebrow">Document contract</p>
+        <h2>Import and export preserve the important parts</h2>
+        <table class="table">
+          <thead><tr><th>Preserved</th><th>Removed</th><th>Validated</th></tr></thead>
+          <tbody>
+            <tr><td>Styles and scripts</td><td>Editor bridge</td><td>Slide count</td></tr>
+            <tr><td>Embedded assets</td><td>Selection state</td><td>Runtime navigation</td></tr>
+            <tr><td>Relative references</td><td>Temporary IDs</td><td>Duplicate IDs</td></tr>
+          </tbody>
+        </table>
+        <div class="footer">Reference deck • export contract</div>
+      </section>
+
+      <section class="slide" id="workflow">
+        <p class="eyebrow">Workflow</p>
+        <h2>From local file to verified standalone deck</h2>
+        <div class="flow">
+          <div class="flow-node">Open HTML</div><div class="flow-arrow">→</div>
+          <div class="flow-node">Edit canvas</div><div class="flow-arrow">→</div>
+          <div class="flow-node">Validate export</div>
+        </div>
+        <div class="footer">Reference deck • workflow</div>
+      </section>
+
+      <section class="slide" id="s11">
+        <p class="eyebrow">Proxy hit testing</p>
+        <h2>Overlay controls do not change the intended target</h2>
+        <div class="nested-shell" style="width:840px">
+          <p>The selection proxy resolves the intended text target.</p>
+        </div>
+        <div class="proxy-layer"><span>selection proxy</span></div>
+        <div class="footer">Reference deck • proxy coverage</div>
+      </section>
+
+      <section class="slide" id="canvas-model">
+        <p class="eyebrow">Canvas geometry</p>
+        <h2>Zoom changes presentation, not document coordinates</h2>
+        <div class="grid grid--2">
+          <div class="card"><strong>Document space</strong><p>Fixed 1920 × 1080 coordinates remain stable.</p></div>
+          <div class="card"><strong>Viewport space</strong><p>The parent scales the stage and converts pointer positions.</p></div>
+        </div>
+        <div class="footer">Reference deck • geometry</div>
+      </section>
+
+      <section class="slide" id="history-model">
+        <p class="eyebrow">Command history</p>
+        <h2>Every mutation carries before and after state</h2>
+        <div class="timeline">
+          <div class="timeline-item"><strong>Select</strong><span class="muted">Identify target</span></div>
+          <div class="timeline-item"><strong>Execute</strong><span class="muted">Apply command</span></div>
+          <div class="timeline-item"><strong>Undo</strong><span class="muted">Restore before</span></div>
+          <div class="timeline-item"><strong>Redo</strong><span class="muted">Restore after</span></div>
+        </div>
+        <div class="footer">Reference deck • history</div>
+      </section>
+
+      <section class="slide" id="accessibility">
+        <p class="eyebrow">Accessible controls</p>
+        <h2>Labels and keyboard paths stay part of the editor contract</h2>
+        <div class="grid grid--3">
+          <div class="card"><strong>Named buttons</strong><p>Toolbar actions expose clear accessible names.</p></div>
+          <div class="card"><strong>Keyboard editing</strong><p>Enter, Escape, undo, and redo have tested paths.</p></div>
+          <div class="card"><strong>Status feedback</strong><p>Errors appear in an alert region without blocking the canvas.</p></div>
+        </div>
+        <div class="footer">Reference deck • accessibility</div>
+      </section>
+
+      <section class="slide" id="export-model">
+        <p class="eyebrow">Export validation</p>
+        <h2>The exported file runs before it is downloaded</h2>
+        <div class="flow">
+          <div class="flow-node">Clone DOM</div><div class="flow-arrow">→</div>
+          <div class="flow-node">Clean state</div><div class="flow-arrow">→</div>
+          <div class="flow-node">Run hidden frame</div>
+        </div>
+        <div class="footer">Reference deck • validation</div>
+      </section>
+
+      <section class="slide slide--dark" id="s10">
+        <p class="eyebrow">Runtime checks</p>
+        <h2>Navigation must work after the editor bridge is removed</h2>
+        <div class="steps">
+          <div data-step>Start on slide one with the expected total</div>
+          <div data-step>Advance through first-slide reveal steps</div>
+          <div data-step>Confirm that slide two becomes active</div>
+        </div>
+        <div class="footer">Reference deck • runtime checks</div>
+      </section>
+
+      <section class="slide" id="security">
+        <p class="eyebrow">Trust boundary</p>
+        <h2>Only trusted local HTML belongs in the editor</h2>
+        <div class="grid grid--2">
+          <div class="card"><strong>Sandboxed preview</strong><p>Deck scripts run in an isolated iframe.</p></div>
+          <div class="card"><strong>Explicit warning</strong><p>The tool does not claim to sanitize malicious documents.</p></div>
+        </div>
+        <div class="footer">Reference deck • trust boundary</div>
+      </section>
+
+      <section class="slide" id="consumer-patterns">
+        <p class="eyebrow">Public workflow</p>
+        <h2>Three paths cover the common ways to use the editor</h2>
+        <div class="steps">
+          <div data-step>Run locally and export a new HTML file</div>
+          <div data-step>Use tests to verify editor changes</div>
+          <div data-step>Deploy the static app into a chosen AWS account</div>
+        </div>
+        <div class="footer">Reference deck • usage patterns</div>
+      </section>
+
+      <section class="slide" id="s12">
+        <p class="eyebrow">Test sequence</p>
+        <h2>Each gate checks a different failure mode</h2>
+        <div class="steps">
+          <div data-step>Unit tests protect document and history logic</div>
+          <div data-step>Browser tests exercise real layout APIs</div>
+          <div data-step>E2E tests drive the public UI and exported deck</div>
+        </div>
+        <div class="grid grid--3" style="margin-top:42px">
+          <div class="card"><span class="metric">U</span><strong>Unit</strong></div>
+          <div class="card"><span class="metric">B</span><strong>Browser</strong></div>
+          <div class="card"><span class="metric">E</span><strong>E2E</strong></div>
+        </div>
+        <div class="footer">Reference deck • test gates</div>
+      </section>
+
+      <section class="slide slide--dark" id="s13">
+        <p class="eyebrow">Ready to edit</p>
+        <h1 class="animate-in">Open a deck.<br>Edit locally.<br>Export safely.</h1>
+        <p class="lead">This public fixture contains no customer data, personal information, or external assets.</p>
+        <div class="footer">HTML Slide Editor • reference fixture</div>
+      </section>
+    </main>
+    <div id="progress"></div>
+    <div id="counter"></div>
+    <script>
+      (() => {
+        const slides = [...document.querySelectorAll(".slide")];
+        const total = slides.length;
+        let current = Math.min(
+          Math.max(Number.parseInt(location.hash.slice(1), 10) || 1, 1),
+          total,
+        ) - 1;
+
+        const steps = (index) => [
+          ...slides[index].querySelectorAll("[data-step]"),
+        ];
+
+        function broadcastState() {
+          if (window.parent === window) return;
+          window.parent.postMessage(
+            { type: "slidecast-state", cur: current + 1, total },
+            "*",
+          );
+        }
+
+        function swap(index, revealAll) {
+          current = Math.min(Math.max(index, 0), total - 1);
+          slides.forEach((slide, slideIndex) => {
+            slide.classList.toggle("active", slideIndex === current);
+            slide.classList.remove("entered");
+          });
+          steps(current).forEach((element) => {
+            element.classList.toggle("revealed", revealAll);
+          });
+          document.querySelector("#progress").style.width =
+            `${((current + 1) / total) * 100}%`;
+          document.querySelector("#counter").textContent =
+            `${current + 1} / ${total}`;
+          history.replaceState(null, "", `#${current + 1}`);
+          void slides[current].offsetWidth;
+          slides[current].classList.add("entered");
+          broadcastState();
+        }
+
+        function show(index, revealAll = false) {
+          if (document.startViewTransition) {
+            document.startViewTransition(() => swap(index, revealAll));
+          } else {
+            swap(index, revealAll);
+          }
+        }
+
+        function next() {
+          const pending = steps(current).filter(
+            (element) => !element.classList.contains("revealed"),
+          );
+          if (pending.length > 0) {
+            pending[0].classList.add("revealed");
+            return;
+          }
+          if (current < total - 1) show(current + 1);
+        }
+
+        function previous() {
+          const shown = steps(current).filter((element) =>
+            element.classList.contains("revealed"),
+          );
+          if (shown.length > 0) {
+            shown.at(-1).classList.remove("revealed");
+            return;
+          }
+          if (current > 0) show(current - 1, true);
+        }
+
+        addEventListener("keydown", (event) => {
+          if (["ArrowRight", " ", "PageDown"].includes(event.key)) {
+            event.preventDefault();
+            next();
+          } else if (["ArrowLeft", "PageUp"].includes(event.key)) {
+            event.preventDefault();
+            previous();
+          } else if (event.key === "Home") {
+            show(0);
+          } else if (event.key === "End") {
+            show(total - 1, true);
+          }
+        });
+
+        addEventListener("click", (event) => {
+          if (!event.target.closest("a")) next();
+        });
+
+        addEventListener("hashchange", () => {
+          const slideNumber = Number.parseInt(location.hash.slice(1), 10);
+          if (
+            slideNumber >= 1 &&
+            slideNumber <= total &&
+            slideNumber - 1 !== current
+          ) {
+            show(slideNumber - 1);
+          }
+        });
+
+        addEventListener("message", (event) => {
+          if (event.data?.type !== "slidecast-nav") return;
+          if (event.data.action === "next") next();
+          if (event.data.action === "prev") previous();
+          if (event.data.action === "ping") broadcastState();
+        });
+
+        function fit() {
+          const scale = Math.min(innerWidth / 1920, innerHeight / 1080);
+          document.querySelector("#stage").style.transform =
+            `scale(${scale})`;
+        }
+
+        addEventListener("resize", fit);
+        fit();
+        show(current);
+      })();
+    </script>
+  </body>
+</html>
